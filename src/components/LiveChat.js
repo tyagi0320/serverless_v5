@@ -1,91 +1,92 @@
-import { useState } from "react";
+import { useState, useEffect } from 'react';
 
-const RoomChatPage = () => {
+const WEBSOCKET_URL = "wss://jp99drwy2e.execute-api.ap-south-1.amazonaws.com/production"; 
 
-    const [message,setMessage] = useState('');
+function ChatComponent() {
+  const [socket, setSocket] = useState(null);
+  const [messages, setMessages] = useState([]); // Array of { username, message }
+  const [input, setInput] = useState("");
+  const username = "John"; // Replace this with the username from Cognito or your auth system
 
-    const [userName, setUsername] = useState('Me');
-    // const [Socket, setsocketId] = useState('');
+  useEffect(() => {
+    // Establish the WebSocket connection
+    const ws = new WebSocket(WEBSOCKET_URL);
+    
+    ws.onopen = () => {
+      console.log("WebSocket connection established");
+    };
+    
+    ws.onmessage = (event) => {
+      const data = JSON.parse(event.data);
+      console.log("Received message:", data);
 
-    const [chats,setChats] = useState([]);
-    // const [roomname,setRoomname] = useState('');
+      // Assuming the message includes { username, message }
+      setMessages((prevMessages) => [...prevMessages, { username: data.username, message: data.message }]);
+    };
+    
+    ws.onclose = () => {
+      console.log("WebSocket connection closed");
+    };
 
-    // useEffect(() => {
-    //     if(!socket){
-    //         navigate('/main');   
-    //     }
+    ws.onerror = (error) => {
+      console.error("WebSocket error:", error);
+    };
 
-    //     socket.on("getSocket",({ socketId }) => {
-    //         setsocketId(socketId);
-    //     })
+    setSocket(ws);
 
-    //     socket.on("getUsername" ,({ username }) => {
-    //         console.log(username);
-    //         setUsername(username);
-    //     })
+    // Cleanup the connection on unmount
+    return () => {
+      ws.close();
+    };
+  }, []);
 
-    //     // socket.on("userJoined",({ username }) => {
-    //     // })
+  const sendMessage = () => {
+    if (socket && input.trim()) {
+      socket.send(
+        JSON.stringify({
+          action: "sendmessage",
+          username: username, 
+          message: input,
+        })
+      );
+      setInput(""); // Clear the input after sending
+    }
+  };
 
-    //     socket.on("roomName" ,({ NameofRoom, socketid }) => {
-    //         setRoomname(NameofRoom);
-    //         setsocketId(socketid);
-    //     })
-
-    //     socket.on("recieveRoom-message", ({ Message, username }) => {
-    //         setChats(prevChats => [...prevChats, { from:username, Message }]);
-    //     })
-
-    //     socket.on('disconnect', () => {
-    //         navigate('/main');
-    //     });
-
-    //     return () => {
-    //         socket.disconnect();
-    //     };
-
-    // },[])
-
-    return (
-        <div className="h-svh font-serif">
-
-            <div className="fixed pt-20 pb-24 flex flex-col p-5 w-full h-full overflow-y-auto border border-white">
-                {
-                    
-                    chats.map((e,i) => {
-                        if(e.from === userName){
-                             return (<div className="m-1 self-end p-2 border border-black rounded-md max-w-sm md:max-w-md lg:max-w-lg" key={i}>
-                                {`${e.Message}`}
-                            </div>)
-                        }
-                        else{
-                            return (<div className="m-1 self-start bg-gray-300 border border-black p-2 rounded-md max-w-sm md:max-w-md lg:max-w-lg" key={i}>
-                                <div className="text- font-bold font-serif">
-                                    {e.from}
-                                </div>
-                                <div className="font-serif pl-1">
-                                    {e.Message}
-                                </div>
-                            </div>)
-                        }
-                    })
-                }
-
-            </div>
-            <form onSubmit={ (e) => {
-                e.preventDefault();
-                if(message){
-                    // socket.emit("sendRoom-message",{ Message : message, username : userName, Socket});
-                    setMessage('');
-                    setChats([...chats,{'Message': message, 'from':'Me'}])
-
-                }
-            } } className="fixed bottom-0 w-full flex h-20 items-center justify-center border border-white">
-                <input type="text" value={message} onChange={ (e) => { setMessage(e.target.value) } } className="outline-none  w-full p-2 h-12 rounded-lg my-2 ml-2 mr-1 border border-black" />
-                <button type="submit" className=" h-12 w-20 my-2 mr-2 ml-1 active:shadow-inner active:shadow-white shadow-sm shadow-white rounded-md border border-black select-none cursor-pointer">Send</button>
-            </form>
+  return (
+    <div className="flex justify-center items-center h-screen w-screen bg-gray-100 font-oxygen">
+      <div className="w-full max-w-xl p-6 bg-white rounded-lg shadow-lg">
+        {/* Chat Room Heading */}
+        <h3 className="text-2xl font-semibold text-teal-600 text-center mb-6">Chat Room</h3>
+        
+        {/* Messages Container */}
+        <div className="border border-gray-300 p-4 mb-4 h-80 overflow-y-auto bg-gray-50 rounded-lg">
+          {messages.map((msg, index) => (
+            <p key={index} className="text-sm text-gray-800 mb-2">
+              <span className="font-semibold">{msg.username}:</span> {msg.message}
+            </p>
+          ))}
         </div>
-    )
+
+        {/* Input and Send Button */}
+        <div className="flex">
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            placeholder="Type your message..."
+            className="flex-grow p-3 rounded-l-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+          />
+          <button
+            onClick={sendMessage}
+            className="p-3 bg-teal-600 text-white rounded-r-lg hover:bg-teal-700 transition-all duration-300"
+          >
+            Send
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 }
 
-export default RoomChatPage;
+export default ChatComponent;

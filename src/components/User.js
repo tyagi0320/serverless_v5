@@ -67,7 +67,7 @@ const User = () => {
               className="bg-teal-600 text-white p-3 text-xl rounded-md hover:bg-teal-700 transition-all duration-300"
               onClick={() => navigate('/livechat')}
             >
-              Live Chat
+              Chat Room
             </button>
           </div>
 

@@ -8,7 +8,7 @@ const LandingPage = () => {
         <div className="flex justify-center items-center h-screen w-screen bg-beige-100 font-oxygen text-[#050505]">
             <div className="max-w-screen-xl w-full p-10">
                 {/* Jaypee Institute Heading - at the top center */}
-                <h2 className="text-2xl font-semibold text-teal-600 text-center mb-8">
+                <h2 className="text-2xl font-semibold text-teal-600 text-center mb-10">
                     JAYPEE INSTITUTE OF INFORMATION TECHNOLOGY, NOIDA SEC-62
                 </h2>
 
