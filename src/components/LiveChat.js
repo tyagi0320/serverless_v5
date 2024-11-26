@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
 
-const WEBSOCKET_URL = "wss://jp99drwy2e.execute-api.ap-south-1.amazonaws.com/production"; 
+const WEBSOCKET_URL = "wss://jp99drwy2e.execute-api.ap-south-1.amazonaws.com/production";
 
 function ChatComponent() {
   const [socket, setSocket] = useState(null);
   const [messages, setMessages] = useState([]); // Array of { username, message }
   const [input, setInput] = useState("");
-  const username = "John"; // Replace this with the username from Cognito or your auth system
+  const [username, setUsername] = useState("");
 
   useEffect(() => {
     // Establish the WebSocket connection
@@ -34,17 +34,25 @@ function ChatComponent() {
 
     setSocket(ws);
 
+    try {
+      const username = localStorage.getItem("CognitoIdentityServiceProvider.1d127dkgs6v4ad0lloog0vh5ff.LastAuthUser");
+      setUsername(username);
+    } catch (error) {
+      setUsername("User");
+    }
+
     // Cleanup the connection on unmount
     return () => {
       ws.close();
     };
   }, []);
 
-  const sendMessage = () => {
+  const sendMessage = (e) => {
+    e.preventDefault();
     if (socket && input.trim()) {
       socket.send(
         JSON.stringify({
-          action: "sendmessage",
+          action: "send",
           username: username, 
           message: input,
         })
@@ -62,14 +70,27 @@ function ChatComponent() {
         {/* Messages Container */}
         <div className="border border-gray-300 p-4 mb-4 h-80 overflow-y-auto bg-gray-50 rounded-lg">
           {messages.map((msg, index) => (
-            <p key={index} className="text-sm text-gray-800 mb-2">
-              <span className="font-semibold">{msg.username}:</span> {msg.message}
-            </p>
+            <div key={index} className={`mb-4 ${msg.username === username ? 'text-right' : 'text-left'}`}>
+              {/* Username displayed separately */}
+              <div className={`text-xs font-semibold ${msg.username === username ? 'text-teal-800' : 'text-gray-700'}`}>
+                {msg.username}
+              </div>
+
+              {/* Separator Line */}
+              <div className="my-1 border-t border-gray-300"></div>
+
+              {/* Message Content */}
+              <div
+                className={`inline-block px-3 py-2 rounded-lg max-w-xs ${msg.username === username ? 'bg-teal-100 text-teal-800' : 'bg-gray-200 text-gray-800'}`}
+              >
+                {msg.message}
+              </div>
+            </div>
           ))}
         </div>
 
         {/* Input and Send Button */}
-        <div className="flex">
+        <form onSubmit={sendMessage} className="flex">
           <input
             type="text"
             value={input}
@@ -83,7 +104,7 @@ function ChatComponent() {
           >
             Send
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );
