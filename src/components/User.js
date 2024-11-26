@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import { Authenticator } from '@aws-amplify/ui-react';
 import { useNavigate } from 'react-router-dom';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css'; // Import toast styles
 
 const User = () => {
-  // Mock data for societies, updated with the new societies
+  // Mock data for societies
   const [societies, setSocieties] = useState([
     { "name": "Optica", "followed": false },
     { "name": "Knuth", "followed": false },
@@ -13,17 +15,22 @@ const User = () => {
     { "name": "IEEE", "followed": false },
     { "name": "GDSC", "followed": false }
   ]);
-  
+
   const navigate = useNavigate();
 
   // Function to toggle follow/unfollow
   const toggleFollow = (name) => {
     setSocieties((prevSocieties) =>
-      prevSocieties.map((society) =>
-        society.name === name
-          ? { ...society, followed: !society.followed }
-          : society
-      )
+      prevSocieties.map((society) => {
+        if (society.name === name) {
+          // Display appropriate toast based on the follow status
+          society.followed
+            ? toast.warning(`Unfollowed ${name}`)
+            : toast.success(`You are now following ${name}`);
+          return { ...society, followed: !society.followed };
+        }
+        return society;
+      })
     );
   };
 
@@ -42,7 +49,7 @@ const User = () => {
               <div className="flex justify-between items-center p-4 mb-4 bg-beige-200 border border-black rounded-md shadow-md" key={index}>
                 <div className="flex-grow text-xl">{element.name}</div>
                 
-                {/* View Button with margin-right for spacing */}
+                {/* View Button */}
                 <button
                   className="bg-teal-600 text-white px-6 py-2 rounded-md mr-4 hover:bg-teal-700 transition-all duration-300"
                   onClick={() => navigate(`/societyPosts?name=${element.name}`)}
@@ -80,6 +87,9 @@ const User = () => {
               Sign Out
             </button>
           </div>
+
+          {/* Toast Container */}
+          <ToastContainer />
         </main>
       )}
     </Authenticator>
