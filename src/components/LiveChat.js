@@ -11,19 +11,27 @@ function ChatComponent() {
   useEffect(() => {
     // Establish the WebSocket connection
     const ws = new WebSocket(WEBSOCKET_URL);
-    
+
     ws.onopen = () => {
       console.log("WebSocket connection established");
     };
-    
-    ws.onmessage = (event) => {
-      const data = JSON.parse(event.data);
-      console.log("Received message:", data);
 
-      // Assuming the message includes { username, message }
-      setMessages((prevMessages) => [...prevMessages, { username: data.username, message: data.message }]);
+    ws.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log("Received message:", data);
+
+        // Assuming the message includes { username, message }
+        if (data.username && data.message) {
+          setMessages((prevMessages) => [...prevMessages, { username: data.username, message: data.message }]);
+        } else {
+          console.error("Invalid message format:", data);
+        }
+      } catch (error) {
+        console.error("Error parsing WebSocket message:", error);
+      }
     };
-    
+
     ws.onclose = () => {
       console.log("WebSocket connection closed");
     };
@@ -34,11 +42,13 @@ function ChatComponent() {
 
     setSocket(ws);
 
+    // Retrieve username from localStorage with a fallback
     try {
-      const username = localStorage.getItem("CognitoIdentityServiceProvider.1d127dkgs6v4ad0lloog0vh5ff.LastAuthUser");
-      setUsername(username);
+      const storedUsername = localStorage.getItem("CognitoIdentityServiceProvider.1d127dkgs6v4ad0lloog0vh5ff.LastAuthUser");
+      setUsername(storedUsername || `Guest_${Math.random().toString(36).substr(2, 5)}`);
     } catch (error) {
-      setUsername("User");
+      console.error("Error accessing localStorage:", error);
+      setUsername(`Guest_${Math.random().toString(36).substr(2, 5)}`);
     }
 
     // Cleanup the connection on unmount
@@ -50,14 +60,18 @@ function ChatComponent() {
   const sendMessage = (e) => {
     e.preventDefault();
     if (socket && input.trim()) {
-      socket.send(
-        JSON.stringify({
-          action: "send",
-          username: username, 
-          message: input,
-        })
-      );
-      setInput(""); // Clear the input after sending
+      try {
+        socket.send(
+          JSON.stringify({
+            action: "send",
+            username: username,
+            message: input,
+          })
+        );
+        setInput(""); // Clear the input after sending
+      } catch (error) {
+        console.error("Error sending message:", error);
+      }
     }
   };
 
@@ -66,14 +80,14 @@ function ChatComponent() {
       <div className="w-full max-w-xl p-6 bg-white rounded-lg shadow-lg">
         {/* Chat Room Heading */}
         <h3 className="text-2xl font-semibold text-teal-600 text-center mb-6">Chat Room</h3>
-        
+
         {/* Messages Container */}
         <div className="border border-gray-300 p-4 mb-4 h-80 overflow-y-auto bg-gray-50 rounded-lg">
           {messages.map((msg, index) => (
             <div key={index} className={`mb-4 ${msg.username === username ? 'text-right' : 'text-left'}`}>
               {/* Username displayed separately */}
               <div className={`text-xs font-semibold ${msg.username === username ? 'text-teal-800' : 'text-gray-700'}`}>
-                {msg.username}
+                {msg.username || "Unknown"}
               </div>
 
               {/* Separator Line */}
@@ -99,7 +113,7 @@ function ChatComponent() {
             className="flex-grow p-3 rounded-l-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
           />
           <button
-            onClick={sendMessage}
+            type="submit"
             className="p-3 bg-teal-600 text-white rounded-r-lg hover:bg-teal-700 transition-all duration-300"
           >
             Send
